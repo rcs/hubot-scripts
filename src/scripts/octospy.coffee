@@ -98,7 +98,7 @@ views =
   push: (context) ->
     if context.created
       template = """
-        {{pusher.name}} created a new branch "{{branch}}" on {{repo_name}} {{compare}}
+        [{{repo_name}}] {{pusher.name}} pushed a new branch: {{branch}} {{compare}}
       """
     else
       if context.commits.length > 3
@@ -106,42 +106,46 @@ views =
 
       context.short_commits = context.commits.slice(0,3)
       template = """
-        {{pusher.name}} pushed to {{branch}} at {{repo_name}} {{compare}}
-        {{#each short_commits}}  {{author.username}}: {{trim id 7}} {{{overflow message 80}}}
-        {{/each}}{{#if extra_commits }}  ... +{{extra_commits}} more{{/if}}
+        [{{repo_name}}] {{pusher.name}} pushed {{commits.length}} commits to {{branch}}: {{compare}}
+        {{#each short_commits}}[{{../repo_name}}/{{../branch}}] {{{overflow message 80}}} - {{author.name}}
+        {{/each}}{{#if extra_commits }}... +{{extra_commits}} more{{/if}}
       """
 
     template = Handlebars.compile(template)
     message = template(context)
   issues:
     """
-      {{sender.login}} {{action}} issue {{issue.number}} on {{repo_name}} "{{{overflow issue.title 25}}}" {{issue.html_url}}
+      [{{repo_name}}] {{sender.login}} {{action}} issue {{issue.number}}: {{{issue.title}}}. {{issue.html_url}}
     """
   issue_comment:
     """
-      {{sender.login}} commented on issue {{issue.number}} on {{repo_name}} "{{{overflow issue.title 25}}}" {{issue.html_url}}
+      [{{repo_name}}] {{sender.login}} commented on issue {{issue.number}}: {{{issue.title}}}. {{issue.html_url}}
       > {{{overflow comment.body 120}}}
     """
   pull_request: (context) ->
+    context.base_ref = context.pull_request.base.label.split(':').reverse()[0]
+    context.head_ref = context.pull_request.head.label.split(':').reverse()[0]
+    if context.head_ref == context.base_ref
+      context.head_ref = context.pull_request.head.label
+
     template = switch context.action
       when 'opened'
         """
-          {{sender.login}} {{action}} pull request {{number}} on {{repo_name}}: "{{{overflow pull_request.title 25}}}" {{pull_request.html_url}}
-          {{pull_request.commits}} commits with {{pull_request.additions}} additions and {{pull_request.deletions}} deletions
+          [{{repo_name}}] {{sender.login}} {{action}} pull request {{number}}: {{{pull_request.title}}} ({{base_ref}}...{{pull_ref}}) {{pull_request.html_url}}
         """
       when 'closed'
         switch context.pull_request.merged
           when true
             """
-              {{sender.login}} merged pull request {{number}} on {{repo_name}}: "{{{overflow pull_request.title 25}}}" {{pull_request.html_url}}
+              [{{repo_name}}] {{sender.login}} merged pull request {{number}}: {{{pull_request.title}}} ({{base_ref}}...{{pull_ref}}) {{pull_request.html_url}} 
             """
           else
             """
-              {{sender.login}} closed pull request {{number}} on {{repo_name}} without merging: "{{{overflow pull_request.title 25}}}" {{pull_request.html_url}}
+              [{{repo_name}}] {{sender.login}} closed pull request {{number}} without merging: {{{pull_request.title}}} ({{base_ref}}...{{pull_ref}}) {{pull_request.html_url}}
             """
       when 'synchronize'
         """
-          {{sender.login}} updated pull request {{number}} on {{repo_name}}: "{{{overflow pull_request.title 25}}}" {{pull_request.html_url}}
+          [{{repo_name}}] {{sender.login}} updated pull request {{number}}: {{{pull_request.title}}} ({{base_ref}}..{{pull_ref}}) {{pull_request.html_url}}
         """
     template = Handlebars.compile(template)
     message = template(context)
@@ -149,32 +153,32 @@ views =
   gollum:
     """
       {{#each pages}}
-        {{../sender.login}} {{action}} wiki page on {{repo_name}}: "{{{overflow title 25}}}" {{html_url}}
+        [{{../repo_name}}] {{../sender.login}} {{action}} wiki page "{{{title}}}". {{html_url}}
       {{/each}}
     """
   watch:
     """
-      {{sender.login}} started watching {{repo_name}} http://{{github_url}}/{{sender.login}}
+      [{{repo_name}}] {{sender.login}} started watching the repository. http://{{github_url}}/{{sender.login}}
     """
   download:
     """
-      {{sender.login}} added a download to {{repo_name}}: "{{{overflow download.name 25}}}" {{download.html_url}}
+      [{{repo_name}}] {{sender.login}} added a download: "{{{download.name}}}" {{download.html_url}}
     """
   fork:
     """
-      {{sender.login}} forked {{repo_name}} {{forkee.html_url}}
+      [{{repo_name}}] {{sender.login}} forked the repository. {{forkee.html_url}}
     """
   fork_apply:
     """
-      {{sender.login}} merged from the fork queue to {{head}} on {{repo_name}}
+      [{{repo_name}}] {{sender.login}} merged from the fork queue to {{head}}.
     """
   member:
     """
-      {{sender.login}} added {{member.login}} as a collaborator to {{repo_name}}
+      [{{repo_name}}] {{sender.login}} added {{member.login}} as a collaborator. http://{{github_url}}/{{sender.login}}
     """
   public:
     """
-      {{sender.login}} turned {{repo_name}} public
+      [{{repo_name}}] {{sender.login}} turned the repository public.
     """
 
 
