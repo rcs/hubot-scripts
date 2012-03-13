@@ -6,7 +6,7 @@
 # kitten bomb me <number> - Many many kittens!
 
 module.exports = (robot) ->
-  robot.respond /kittens?(?: me)?$/i, (msg) ->
+  robot.respond /kitt(?:ens?|y)(?: me)?$/i, (msg) ->
     msg.send kittenMe()
 
   robot.respond /kittens?(?: me)? (\d+)(?:[x ](\d+))?$/i, (msg) ->
